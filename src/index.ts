@@ -1,8 +1,10 @@
 export { SynkVaultClient } from './client.js'
 export { SynkVaultError } from './errors.js'
 export type {
-  Org,
-  OrgsResponse,
+  Document,
+  DocumentResponse,
+  DocumentsResponse,
+  GetDocumentParams,
   GetKnowledgeNodeParams,
   GetKnowledgeNodesParams,
   GetOntologyChildrenParams,
@@ -14,10 +16,16 @@ export type {
   IngestUrlBody,
   KnowledgeNodeResponse,
   KnowledgeNodesResponse,
+  ListDocumentsParams,
+  Org,
+  OrgUser,
+  OrgUsersResponse,
+  OrgsResponse,
   OntologyChildrenResponse,
   OntologyNode,
   OntologyNodeResponse,
   OntologyResponse,
   PaginationMeta,
   SynkVaultConfig,
+  UploadDocumentParams,
 } from './types.js'

@@ -64,6 +64,8 @@ interface SynkVaultConfig {
 
 ### `client.orgs`
 
+#### `list()`
+
 List all organizations accessible to the authenticated credential. Does not require `org_id`.
 
 ```ts
@@ -72,6 +74,28 @@ const { data } = await client.orgs.list()
 ```
 
 Use this to discover which `org_id` values to pass when calling other resources.
+
+#### `listUsers(orgId?)`
+
+List all users in an organization. Requires `org_owner` or `org_admin` role.
+
+```ts
+// Uses the orgId from client config
+const { data } = await client.orgs.listUsers()
+// [{ id: 'user-1', name: 'Alice', role: 'org_owner' }, ...]
+
+// Or pass an explicit org ID
+const { data } = await client.orgs.listUsers('7f1b...')
+```
+
+**OrgUser shape:**
+```ts
+{
+  id:   string
+  name: string
+  role: string  // e.g. 'org_owner', 'org_admin', 'org_user'
+}
+```
 
 ---
 
@@ -225,6 +249,72 @@ await client.ingest.url({
 
 ---
 
+### `client.documents`
+
+Upload and manage documents in your organization's knowledge base.
+
+#### `upload({ file, dryrun? })`
+
+Upload a file for processing. Accepts any `Blob` or `File`.
+
+```ts
+const file = new File([buffer], 'report.pdf', { type: 'application/pdf' })
+
+const doc = await client.documents.upload({ file })
+// { id: 'doc-abc', original_file_name: 'report.pdf', status: 'queued', ... }
+
+// Dry run — validates without ingesting
+await client.documents.upload({ file, dryrun: true })
+```
+
+#### `list(params?)`
+
+Retrieve a paginated list of documents. By default returns documents for the authenticated caller.
+
+```ts
+const { data, pagination } = await client.documents.list()
+
+// With filters
+const { data } = await client.documents.list({
+  status:     'processed',   // filter by processing status
+  page:       1,
+  page_size:  20,
+  start_date: '2026-01-01T00:00:00Z',
+  end_date:   '2026-12-31T23:59:59Z',
+  search:     'annual report',
+  all_users:  true,          // org admins/owners only — list all users' documents
+  by_users:   'user-uuid',   // org admins/owners only — filter by specific user
+})
+
+console.log(pagination)  // { page, page_size, total_count, total_pages }
+```
+
+#### `get(id, params?)`
+
+Retrieve a single document by its ID.
+
+```ts
+const doc = await client.documents.get('doc-abc')
+
+// Include extracted properties
+const doc = await client.documents.get('doc-abc', { include: 'extracted' })
+console.log(doc.extracted_properties)
+```
+
+**Document shape:**
+```ts
+{
+  id:                    string
+  original_file_name:    string
+  document_size:         number
+  status:                string   // e.g. 'queued', 'processing', 'processed', 'failed'
+  created_on:            string   // ISO 8601
+  extracted_properties?: Record<string, unknown>
+}
+```
+
+---
+
 ## Error Handling
 
 All API errors throw a `SynkVaultError`:
@@ -264,6 +354,8 @@ import type {
   SynkVaultConfig,
   Org,
   OrgsResponse,
+  OrgUser,
+  OrgUsersResponse,
   OntologyNode,
   OntologyResponse,
   OntologyNodeResponse,
@@ -271,6 +363,12 @@ import type {
   KnowledgeNodesResponse,
   KnowledgeNodeResponse,
   PaginationMeta,
+  Document,
+  DocumentResponse,
+  DocumentsResponse,
+  ListDocumentsParams,
+  GetDocumentParams,
+  UploadDocumentParams,
   IngestResponse,
   HealthResponse,
   GetOntologyParams,
