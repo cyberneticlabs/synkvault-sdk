@@ -5,7 +5,7 @@ Official TypeScript SDK for the [SynkVault](https://synkvault.com) Partners API.
 ## Requirements
 
 - Node.js 18+
-- A SynkVault Partner account with an API key or JWT token
+- A SynkVault Partner account with an API key
 
 ## Installation
 
@@ -34,37 +34,28 @@ console.log(health.status) // "ok"
 
 ## Authentication
 
-The client supports two authentication methods. Provide one:
+All requests are authenticated via API key, sent as the `X-Api-Key` header.
 
-| Method    | Config field | Header sent            |
-|-----------|--------------|------------------------|
-| API Key   | `apiKey`     | `X-Api-Key: <key>`     |
-| JWT Token | `token`      | `Authorization: Bearer <token>` |
+### Getting your Organization ID
 
-```ts
-// API key
-const client = new SynkVaultClient({
-  baseUrl: 'https://api.synkvault.com',
-  orgId: 'your-org-uuid',
-  apiKey: 'svk_live_...',
-})
+1. Log in to your SynkVault account (you must be an **Admin** or **Owner** of the organization)
+2. If you have multiple organizations, switch to the desired one
+3. In the left menu, go to **Settings > Organizations**
+4. Under the **General** tab, copy your **Organization ID**
 
-// JWT token
-const client = new SynkVaultClient({
-  baseUrl: 'https://api.synkvault.com',
-  orgId: 'your-org-uuid',
-  token: 'eyJhbGci...',
-})
-```
+### Getting an API Key
+
+1. Click your **user avatar** in the top right and select **My Account**
+2. In the left menu, select **API Keys**
+3. Create a new key, copy it immediately, and store it somewhere safe — **this is the only time you will see it**
 
 ## Configuration
 
 ```ts
 interface SynkVaultConfig {
-  baseUrl: string    // Partners API base URL (required)
-  orgId:   string    // Your organization UUID (required)
-  apiKey?: string    // API key auth (one of apiKey or token required)
-  token?:  string    // JWT bearer token auth
+  baseUrl:  string   // Partners API base URL (required)
+  orgId:    string   // Your organization UUID (required)
+  apiKey:   string   // API key (required)
   timeout?: number   // Request timeout in ms (default: 30000)
 }
 ```

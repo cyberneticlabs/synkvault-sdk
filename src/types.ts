@@ -6,9 +6,7 @@ export interface SynkVaultConfig {
   /** Organization ID — required for all non-health endpoints */
   orgId: string
   /** API key auth (X-Api-Key header) */
-  apiKey?: string
-  /** JWT bearer token auth (Authorization: Bearer <token>) */
-  token?: string
+  apiKey: string
   /** Request timeout in milliseconds. Default: 30000 */
   timeout?: number
 }
@@ -82,6 +80,64 @@ export interface KnowledgeNodeResponse {
   success: boolean
   data: Record<string, unknown>
   edgeProperties?: string[]
+}
+
+// ── Org Users ────────────────────────────────────────────────────────────────
+
+export interface OrgUser {
+  id: string
+  name: string
+  role: string
+}
+
+export interface OrgUsersResponse {
+  success: boolean
+  data: OrgUser[]
+}
+
+// ── Documents ─────────────────────────────────────────────────────────────────
+
+export interface Document {
+  id: string
+  original_file_name: string
+  document_size: number
+  status: string
+  created_on: string
+}
+
+export interface DocumentsResponse {
+  success: boolean
+  data: Document[]
+  pagination: PaginationMeta
+}
+
+export interface DocumentResponse {
+  id: string
+  original_file_name: string
+  document_size: number
+  status: string
+  created_on: string
+  extracted_properties?: Record<string, unknown>
+}
+
+export interface ListDocumentsParams {
+  page?: number
+  page_size?: number
+  status?: string
+  start_date?: string
+  end_date?: string
+  search?: string
+  all_users?: boolean
+  by_users?: string
+}
+
+export interface GetDocumentParams {
+  include?: 'extracted'
+}
+
+export interface UploadDocumentParams {
+  file: Blob | File
+  dryrun?: boolean
 }
 
 // ── Ingest ────────────────────────────────────────────────────────────────────
