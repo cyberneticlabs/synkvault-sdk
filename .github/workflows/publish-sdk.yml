@@ -1,0 +1,111 @@
+name: Publish SDK to npm
+
+on:
+  pull_request:
+    branches:
+      - master
+      - dev
+  push:
+    branches:
+      - master
+
+jobs:
+  check-version:
+    name: Check SDK version bump
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+
+      - name: Get base version
+        id: base
+        run: |
+          BASE_VERSION=$(jq -r '.version' package.json)
+          echo "version=${BASE_VERSION}" >> $GITHUB_OUTPUT
+          echo "Base version: ${BASE_VERSION}"
+
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Get PR version
+        id: pr
+        run: |
+          PR_VERSION=$(jq -r '.version' package.json)
+          echo "version=${PR_VERSION}" >> $GITHUB_OUTPUT
+          echo "PR version: ${PR_VERSION}"
+
+      - name: Fail if version not bumped
+        run: |
+          BASE="${{ steps.base.outputs.version }}"
+          PR="${{ steps.pr.outputs.version }}"
+          if [ "$BASE" = "$PR" ] && [ "$BASE" != "0.0.0" ]; then
+            echo "::error::SDK version must be bumped in this PR. Current version: $BASE"
+            exit 1
+          fi
+          echo "✓ Version: $BASE → $PR"
+
+  test:
+    name: Run SDK unit tests
+    if: github.event_name == 'pull_request'
+    needs: check-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run SDK unit tests
+        run: pnpm test
+
+      - name: Type check
+        run: pnpm typecheck
+
+  publish:
+    name: Publish @synkvault/sdk to npm
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    environment: sdk
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run SDK unit tests
+        run: pnpm test
+
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Configure npm auth
+        run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
+
+      - name: Build & publish
+        run: pnpm publish --no-git-checks
