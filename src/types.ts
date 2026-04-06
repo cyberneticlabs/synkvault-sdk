@@ -6,7 +6,9 @@ export interface SynkVaultConfig {
   /** Organization ID — required for all non-health endpoints */
   orgId: string
   /** API key auth (X-Api-Key header) */
-  apiKey: string
+  apiKey?: string
+  /** JWT token auth (Authorization: Bearer header) */
+  token?: string
   /** Request timeout in milliseconds. Default: 30000 */
   timeout?: number
 }

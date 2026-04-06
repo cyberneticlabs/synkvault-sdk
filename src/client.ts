@@ -27,8 +27,8 @@ export class SynkVaultClient {
   constructor(config: SynkVaultConfig) {
     if (!config.baseUrl) throw new Error('SynkVaultClient: baseUrl is required')
     if (!config.orgId) throw new Error('SynkVaultClient: orgId is required')
-    if (!config.apiKey) {
-      throw new Error('SynkVaultClient: apiKey is required')
+    if (!config.apiKey && !config.token) {
+      throw new Error('SynkVaultClient: either apiKey or token must be provided')
     }
 
     this.config = config
@@ -68,7 +68,11 @@ export class SynkVaultClient {
     }
 
     if (!options?.skipAuth) {
-      headers['X-Api-Key'] = this.config.apiKey
+      if (this.config.token) {
+        headers['Authorization'] = `Bearer ${this.config.token}`
+      } else if (this.config.apiKey) {
+        headers['X-Api-Key'] = this.config.apiKey
+      }
     }
 
     const controller = new AbortController()
@@ -135,7 +139,9 @@ export class SynkVaultClient {
     try {
       response = await fetch(url.toString(), {
         method: 'POST',
-        headers: { 'X-Api-Key': this.config.apiKey },
+        headers: this.config.token
+        ? { Authorization: `Bearer ${this.config.token}` }
+        : { 'X-Api-Key': this.config.apiKey! },
         body: formData,
         signal: controller.signal,
       })
