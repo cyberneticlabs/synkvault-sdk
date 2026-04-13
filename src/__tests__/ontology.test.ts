@@ -90,4 +90,58 @@ describe('OntologyResource', () => {
       expect(url).toContain('depth=3')
     })
   })
+
+  describe('updateDescription()', () => {
+    beforeEach(() => stubFetch({ data: NODE }))
+
+    it('calls PATCH /api/v1/ontology/{node_id}/description', async () => {
+      const client = new SynkVaultClient(BASE_CONFIG)
+      await client.ontology.updateDescription('node-uuid', { description: 'A city node' })
+      const [url, init] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit]
+      expect(url).toContain('/api/v1/ontology/node-uuid/description')
+      expect(init.method).toBe('PATCH')
+    })
+
+    it('sends description in the request body', async () => {
+      const client = new SynkVaultClient(BASE_CONFIG)
+      await client.ontology.updateDescription('node-uuid', { description: 'A city node' })
+      const [, init] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit]
+      expect(JSON.parse(init.body as string)).toEqual({ description: 'A city node' })
+    })
+
+    it('URL-encodes the node ID', async () => {
+      const client = new SynkVaultClient(BASE_CONFIG)
+      await client.ontology.updateDescription('has spaces', { description: 'x' })
+      const [url] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string]
+      expect(url).toContain('has%20spaces')
+    })
+  })
+
+  describe('updatePropertyDescription()', () => {
+    beforeEach(() => stubFetch({ data: { properties: { color: {} } } }))
+
+    it('calls PATCH /api/v1/ontology/{node_id}/properties/description', async () => {
+      const client = new SynkVaultClient(BASE_CONFIG)
+      await client.ontology.updatePropertyDescription('node-uuid', {
+        property_name: 'color',
+        description: 'The color of the node',
+      })
+      const [url, init] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit]
+      expect(url).toContain('/api/v1/ontology/node-uuid/properties/description')
+      expect(init.method).toBe('PATCH')
+    })
+
+    it('sends property_name and description in the request body', async () => {
+      const client = new SynkVaultClient(BASE_CONFIG)
+      await client.ontology.updatePropertyDescription('node-uuid', {
+        property_name: 'color',
+        description: 'The color of the node',
+      })
+      const [, init] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string, RequestInit]
+      expect(JSON.parse(init.body as string)).toEqual({
+        property_name: 'color',
+        description: 'The color of the node',
+      })
+    })
+  })
 })

@@ -10,6 +10,9 @@ Official TypeScript SDK for the SynkVault Partners API. A standalone, independen
 - **Build**: tsup (dual ESM + CJS)
 - **Tests**: Vitest
 
+## Reference
+This sdk implementation should always use the SynkVault OpenaAPI reference could be foudn in https://synkvault-web-dev-partners-yqmxkygnlq-nw.a.run.app/api/v1/docs/openapi.json
+
 ## Key Rules
 
 ### Test Philosophy
@@ -66,4 +69,4 @@ pnpm typecheck
 
 ## Version
 
-Currently `0.1.0-alpha.4`. Follow semantic versioning for GA.
+Alwasy pump the version when you are asked to push changes to master. Follow semantic versioning for GA.

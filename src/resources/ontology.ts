@@ -5,6 +5,10 @@ import type {
   OntologyChildrenResponse,
   OntologyNodeResponse,
   OntologyResponse,
+  UpdateOntologyNodeDescriptionBody,
+  UpdateOntologyNodeDescriptionResponse,
+  UpdateOntologyPropertyDescriptionBody,
+  UpdateOntologyPropertyDescriptionResponse,
 } from '../types.js'
 
 export class OntologyResource {
@@ -36,6 +40,30 @@ export class OntologyResource {
       {
         params: params as Record<string, unknown>,
       },
+    )
+  }
+
+  /** Update the description of an ontology node. */
+  updateDescription(
+    nodeId: string,
+    body: UpdateOntologyNodeDescriptionBody,
+  ): Promise<UpdateOntologyNodeDescriptionResponse> {
+    return this.client.request<UpdateOntologyNodeDescriptionResponse>(
+      'PATCH',
+      `/api/v1/ontology/${encodeURIComponent(nodeId)}/description`,
+      { body },
+    )
+  }
+
+  /** Update the description of a property on an ontology node. */
+  updatePropertyDescription(
+    nodeId: string,
+    body: UpdateOntologyPropertyDescriptionBody,
+  ): Promise<UpdateOntologyPropertyDescriptionResponse> {
+    return this.client.request<UpdateOntologyPropertyDescriptionResponse>(
+      'PATCH',
+      `/api/v1/ontology/${encodeURIComponent(nodeId)}/properties/description`,
+      { body },
     )
   }
 }

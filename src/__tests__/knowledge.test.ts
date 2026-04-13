@@ -76,6 +76,22 @@ describe('KnowledgeResource', () => {
       expect(url).toContain('start_date=')
       expect(url).toContain('end_date=')
     })
+
+    it('returns inboundRelationships when present in response', async () => {
+      const inboundRelationships = [
+        { sourceNode: 'restaurant', propName: 'city', key: 'restaurant_via_city' },
+      ]
+      stubFetch({
+        success: true,
+        data: [{ id: 'city:london', name: 'London' }],
+        pagination: { page: 1, page_size: 10, total_count: 1, total_pages: 1 },
+        edgeProperties: [],
+        inboundRelationships,
+      })
+      const client = new SynkVaultClient(BASE_CONFIG)
+      const result = await client.knowledge.listNodes({ node_name: 'city', nested: true })
+      expect(result.inboundRelationships).toEqual(inboundRelationships)
+    })
   })
 
   describe('getNode()', () => {
@@ -93,6 +109,21 @@ describe('KnowledgeResource', () => {
       await client.knowledge.getNode({ record_id: 'city:abc' })
       const [url] = (fetch as ReturnType<typeof vi.fn>).mock.calls[0] as [string]
       expect(url).toContain('record_id=city%3Aabc')
+    })
+
+    it('returns inboundRelationships when present in single-node response', async () => {
+      const inboundRelationships = [
+        { sourceNode: 'restaurant', propName: 'city', key: 'restaurant_via_city' },
+      ]
+      stubFetch({
+        success: true,
+        data: { id: 'city:abc', name: 'London', restaurant_via_city: [] },
+        edgeProperties: [],
+        inboundRelationships,
+      })
+      const client = new SynkVaultClient(BASE_CONFIG)
+      const result = await client.knowledge.getNode({ record_id: 'city:abc', nested: true })
+      expect(result.inboundRelationships).toEqual(inboundRelationships)
     })
   })
 })

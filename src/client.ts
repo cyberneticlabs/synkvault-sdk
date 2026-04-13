@@ -45,7 +45,7 @@ export class SynkVaultClient {
   }
 
   async request<T>(
-    method: 'GET' | 'POST',
+    method: 'GET' | 'POST' | 'PATCH',
     path: string,
     options?: RequestOptions,
   ): Promise<T> {

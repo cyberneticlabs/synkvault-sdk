@@ -71,17 +71,28 @@ export interface PaginationMeta {
   total_pages: number
 }
 
+export interface InboundRelationship {
+  /** The ontology node that references the queried node */
+  sourceNode: string
+  /** The property name on the source node that holds the reference */
+  propName: string
+  /** The key injected into each data record containing the array of referencing records */
+  key: string
+}
+
 export interface KnowledgeNodesResponse {
   success: boolean
   data: Record<string, unknown>[]
   pagination: PaginationMeta
   edgeProperties?: string[]
+  inboundRelationships?: InboundRelationship[]
 }
 
 export interface KnowledgeNodeResponse {
   success: boolean
   data: Record<string, unknown>
   edgeProperties?: string[]
+  inboundRelationships?: InboundRelationship[]
 }
 
 // ── Org Users ────────────────────────────────────────────────────────────────
@@ -159,6 +170,25 @@ export interface GetOntologyParams {
 export interface GetOntologyChildrenParams {
   /** Depth of descendants to retrieve. Clamped 1–10. Default: 1 */
   depth?: number
+}
+
+export interface UpdateOntologyNodeDescriptionBody {
+  description: string
+}
+
+export interface UpdateOntologyPropertyDescriptionBody {
+  property_name: string
+  description: string
+}
+
+export interface UpdateOntologyNodeDescriptionResponse {
+  data: OntologyNode
+}
+
+export interface UpdateOntologyPropertyDescriptionResponse {
+  data: {
+    properties: Record<string, unknown>
+  }
 }
 
 export interface GetKnowledgeNodesParams {
