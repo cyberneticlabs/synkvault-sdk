@@ -1,6 +1,7 @@
 # Node
 node_modules/
 .pnpm-store/
+dist/
 
 # .NET
 packages/dotnet/**/.vs/
@@ -35,3 +36,4 @@ coverage
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
