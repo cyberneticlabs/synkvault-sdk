@@ -28,11 +28,11 @@ Every test must emulate how an external developer would use the SDK — not impl
 
 ### Code Organization
 
-- `src/client.ts` — Main client class
-- `src/resources/*.ts` — Resource classes (health, orgs, ingest, etc.)
-- `src/types.ts` — Public type exports
-- `src/errors.ts` — Error handling
-- `src/index.ts` — Public exports only
+- `packages/js/src/client.ts` — Main client class
+- `packages/js/src/resources/*.ts` — Resource classes (health, orgs, ingest, etc.)
+- `packages/js/src/types.ts` — Public type exports
+- `packages/js/src/errors.ts` — Error handling
+- `packages/js/src/index.ts` — Public exports only
 
 ### Publishing
 

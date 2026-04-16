@@ -1,8 +1,17 @@
-# Dependencies
-node_modules
+# Node
+node_modules/
+.pnpm-store/
 
-# Build
-dist
+# .NET
+packages/dotnet/**/.vs/
+packages/dotnet/**/bin/
+packages/dotnet/**/obj/
+packages/dotnet/**/*.user
+packages/dotnet/**/*.nupkg
+packages/dotnet/**/*.snupkg
+
+# Build outputs
+packages/js/dist/
 .nuxt
 .output
 
@@ -12,7 +21,6 @@ dist
 .env.*.local
 
 # IDE
-.vscode
 .idea
 *.swp
 *.swo

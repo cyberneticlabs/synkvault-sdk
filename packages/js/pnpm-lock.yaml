@@ -6,9 +6,7 @@ settings:
 
 importers:
 
-  .: {}
-
-  packages/js:
+  .:
     devDependencies:
       tsup:
         specifier: ^8.3.0
