@@ -25,7 +25,7 @@ jobs:
       - name: Get base version
         id: base
         run: |
-          BASE_VERSION=$(jq -r '.version' package.json)
+          BASE_VERSION=$(jq -r '.version' packages/js/package.json)
           echo "version=${BASE_VERSION}" >> $GITHUB_OUTPUT
           echo "Base version: ${BASE_VERSION}"
 
@@ -39,7 +39,7 @@ jobs:
       - name: Get PR version
         id: pr
         run: |
-          PR_VERSION=$(jq -r '.version' package.json)
+          PR_VERSION=$(jq -r '.version' packages/js/package.json)
           echo "version=${PR_VERSION}" >> $GITHUB_OUTPUT
           echo "PR version: ${PR_VERSION}"
 
@@ -120,4 +120,4 @@ jobs:
         run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
 
       - name: Build & publish
-        run: pnpm publish --no-git-checks
+        run: pnpm publish --no-git-checks --filter @synkvault/sdk
