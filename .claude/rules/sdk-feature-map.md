@@ -143,6 +143,18 @@ Maps every feature to its implementation across all SDK packages. When adding a 
 | Get | `client.documents.get(id, params?)` | `client.Documents.GetAsync(id, params?, ct?)` |
 | Endpoint | `GET /api/v1/ingest/documents/{id}` (URL-encoded) | Same |
 
+### Chat
+
+| Method | TypeScript | .NET |
+|---|---|---|
+| Send message | `client.chat.run(params)` | `client.Chat.RunAsync(params, ct?)` |
+| Endpoint | `POST /api/v1/chat` (multipart/form-data) | Same |
+| org_id | Always appended | Same |
+| Auth | API key or Bearer token | Same |
+| Request fields | `message` (required), `stream?`, `session_id?`, `user_id?` | Same |
+| Returns | `ReadableStream<ChatEvent>` (SSE) | `IAsyncEnumerable<ChatEvent>` |
+| Error on non-2xx | Throws `SynkVaultError` before stream opens | Same |
+
 ---
 
 ## Types / Models

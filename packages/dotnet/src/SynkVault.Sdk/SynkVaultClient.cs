@@ -1,8 +1,10 @@
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using SynkVault.Sdk.Internal;
+using SynkVault.Sdk.Models.Chat;
 using SynkVault.Sdk.Resources;
 
 namespace SynkVault.Sdk;
@@ -41,6 +43,9 @@ public sealed class SynkVaultClient
     /// <summary>Document upload and management.</summary>
     public DocumentsResource Documents { get; }
 
+    /// <summary>Chat / AI agent interaction via SSE streaming.</summary>
+    public ChatResource Chat { get; }
+
     // ── Constructors ────────────────────────────────────────────────────────
 
     /// <summary>
@@ -72,6 +77,7 @@ public sealed class SynkVaultClient
         Knowledge = new KnowledgeResource(this);
         Ingest = new IngestResource(this);
         Documents = new DocumentsResource(this);
+        Chat = new ChatResource(this);
     }
 
     // ── Internal helpers ────────────────────────────────────────────────────
@@ -120,6 +126,54 @@ public sealed class SynkVaultClient
 
         var response = await SendWithTimeoutAsync(request, cancellationToken).ConfigureAwait(false);
         return await ParseResponseAsync<T>(response, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Sends a multipart/form-data POST and streams the SSE response as <typeparamref name="T"/> events.
+    /// Throws <see cref="SynkVaultException"/> immediately if the server returns a non-2xx status.
+    /// </summary>
+    internal async IAsyncEnumerable<T> StreamRequestAsync<T>(
+        string path,
+        MultipartFormDataContent formData,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var url = BuildUrl(path, extraParams: null, skipOrgId: false);
+
+        using var request = new HttpRequestMessage(HttpMethod.Post, url);
+        ApplyAuth(request, skipAuth: false);
+        request.Content = formData;
+
+        var response = await _httpClient
+            .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            var raw = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+            JsonDocument? doc = null;
+            try { doc = JsonDocument.Parse(raw); } catch { }
+            var msg = ExtractErrorMessage(doc, response.ReasonPhrase);
+            var data = doc?.RootElement.ValueKind == JsonValueKind.Object
+                ? (object?)JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(raw)
+                : null;
+            throw new SynkVaultException((int)response.StatusCode, msg, data);
+        }
+
+        using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        using var reader = new StreamReader(stream);
+
+        while (!reader.EndOfStream)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+            if (line is null) break;
+            if (!line.StartsWith("data: ", StringComparison.Ordinal)) continue;
+            var json = line[6..];
+            T? evt;
+            try { evt = JsonSerializer.Deserialize<T>(json, JsonOptions); }
+            catch { continue; }
+            if (evt is not null) yield return evt;
+        }
     }
 
     // ── Private helpers ─────────────────────────────────────────────────────

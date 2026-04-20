@@ -219,3 +219,25 @@ export interface IngestJsonBody {
 export interface IngestUrlBody {
   url: string
 }
+
+// ── Chat ──────────────────────────────────────────────────────────────────────
+
+export interface ChatRunParams {
+  /** Message to send to the agent */
+  message: string
+  /** Session ID to continue an existing conversation */
+  sessionId?: string
+  /** Whether to stream the response. Default: true */
+  stream?: boolean
+  /** User ID for context */
+  userId?: string
+}
+
+export interface ChatEvent {
+  event: string
+  content?: string
+  reasoning_content?: string
+  session_id?: string
+  tool?: { name: string; [key: string]: unknown }
+  [key: string]: unknown
+}

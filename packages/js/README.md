@@ -197,6 +197,38 @@ const doc = await client.documents.get('doc-abc', { include: 'extracted' })
 
 ---
 
+### `client.chat`
+
+#### `run(params)`
+
+Send a message and receive a streaming response via Server-Sent Events (SSE).
+
+```ts
+const stream = await client.chat.run({
+  message: 'What are the top 5 cities by population?',
+  sessionId: 'sess-abc123',  // optional: continue existing session
+  userId: 'user-xyz',         // optional: user context
+})
+
+for await (const event of stream) {
+  console.log(event.event)    // "RunResponseContentDelta"
+  console.log(event.content)  // "Tokyo has..."
+  console.log(event.session_id) // "sess-abc123"
+}
+```
+
+**Returns**: `ReadableStream<ChatEvent>` — an async iterable of structured events.
+
+**Events** (non-exhaustive):
+- `RunResponseContentDelta` — streaming response token, carries `content`
+- `TeamRunCompleted` — final response, carries `content`
+- `RunToolCallStarted` / `RunToolCallCompleted` — tool invocation, carries `tool: { name: string }`
+- `ReasoningStarted` / `ReasoningContentDelta` / `ReasoningCompleted` — reasoning tokens
+
+For the full list of event types and shapes, see [Chat Documentation](../../docs/CHAT.md).
+
+---
+
 ## Error Handling
 
 ```ts
