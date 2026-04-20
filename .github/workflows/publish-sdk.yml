@@ -71,11 +71,19 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run SDK unit tests
+      - name: Run JavaScript SDK unit tests
         run: pnpm test
 
       - name: Type check
         run: pnpm typecheck
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Run .NET SDK unit tests
+        run: dotnet test packages/dotnet/SynkVault.sln
 
   publish:
     name: Publish @synkvault/sdk to npm
@@ -98,11 +106,19 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run SDK unit tests
+      - name: Run JavaScript SDK unit tests
         run: pnpm test
 
       - name: Type check
         run: pnpm typecheck
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Run .NET SDK unit tests
+        run: dotnet test packages/dotnet/SynkVault.sln
 
       - name: Configure npm auth
         run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
