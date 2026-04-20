@@ -1,25 +1,43 @@
 # SynkVault SDK Documentation
 
-Comprehensive guides for using the SynkVault Partners API SDK.
+Official SDK documentation for the SynkVault Partners API, organized by language and platform.
 
-## Quick Links
+## SDKs
 
-- **[Main README](../packages/js/README.md)** — Installation, configuration, quick start
-- **[Resources](RESOURCES.md)** — Detailed API reference for all SDK resources
-- **[Chat Feature](CHAT.md)** — Streaming AI conversations
+### JavaScript/TypeScript
 
-## Documentation Structure
+Official Node.js & browser SDK with full feature support.
 
-| Document | Purpose |
-|---|---|
-| [RESOURCES.md](RESOURCES.md) | Complete API reference with examples for Health, Orgs, Ontology, Knowledge, Ingest, and Documents |
-| [CHAT.md](CHAT.md) | In-depth Chat API guide — streaming responses, events, session management, examples |
+- **Installation**: `npm install @synkvault/sdk`
+- **Node**: >=18
+- **Features**: Resources, Chat with streaming, Type safety
+- **[Quick Start](https://github.com/CyberneticLabs/synkvault-sdk/blob/master/docs/js/README.md)** — See documentation links inside
 
-## Concepts
+### .NET
+
+Official .NET SDK for .NET 6+ with streaming support.
+
+- **Installation**: NuGet package coming soon
+- **Runtime**: .NET 6+
+- **Features**: Resources, Chat with streaming
+- **[Getting Started](https://github.com/CyberneticLabs/synkvault-sdk/blob/master/docs/dotnet/README.md)** — See documentation links inside
+
+### Python
+
+Official Python SDK (planned).
+
+- **Status**: In development
+- **Python**: 3.10+
+- **Planned Features**: Resources, Chat with streaming, Async support
+- **[Roadmap](https://github.com/CyberneticLabs/synkvault-sdk/blob/master/docs/python/README.md)**
+
+---
+
+## Common Concepts
 
 ### Resources
 
-The SDK is organized around **resources** — collections of related operations grouped by domain:
+All SDKs follow the same resource-based architecture:
 
 - **Health** — API status and version
 - **Orgs** — Organization and user management
@@ -29,89 +47,35 @@ The SDK is organized around **resources** — collections of related operations 
 - **Documents** — Upload and extract from files
 - **Chat** — AI agent conversations
 
-Each resource is accessed via the client: `client.health`, `client.orgs`, etc.
-
 ### Authentication
 
 All API requests require either:
-- **API Key** (preferred for server-to-server): `X-Api-Key` header
+- **API Key** (server-to-server): `X-Api-Key` header
 - **Bearer Token** (OAuth, user sessions): `Authorization: Bearer` header
 
 ### Organization Context
 
-Most requests automatically include your organization ID (`org_id`) as a query parameter. This scopes all data to your tenant.
+Most requests automatically include your organization ID (`org_id`) as a query parameter, scoping all data to your tenant.
 
 ### Errors
 
-All errors are thrown as `SynkVaultError` exceptions:
+All SDKs throw language-specific exceptions with consistent structure:
 
-```ts
-try {
-  await client.knowledge.listNodes({ node_name: 'Company' })
-} catch (err) {
-  if (err instanceof SynkVaultError) {
-    console.error(err.statusCode, err.message, err.data)
-  }
-}
-```
+**JavaScript**: `SynkVaultError`
+**C#**: `SynkVaultException`
+**Python**: `SynkVaultError` (coming)
 
 ---
 
-## Getting Started
+## API Reference
 
-### 1. Install
-
-```bash
-npm install @synkvault/sdk
-```
-
-### 2. Initialize Client
-
-```ts
-import { SynkVaultClient } from '@synkvault/sdk'
-
-const client = new SynkVaultClient({
-  baseUrl: 'https://api.synkvault.com',
-  orgId: 'your-org-uuid',
-  apiKey: 'svk_live_...',
-})
-```
-
-### 3. Use a Resource
-
-```ts
-// Check API health
-const health = await client.health.check()
-
-// List companies
-const result = await client.knowledge.listNodes({ node_name: 'Company' })
-
-// Chat with AI agent
-const stream = await client.chat.run({ message: 'Summarize our data' })
-for await (const event of stream) {
-  console.log(event.content)
-}
-```
-
-For detailed examples, see [RESOURCES.md](RESOURCES.md) and [CHAT.md](CHAT.md).
-
----
-
-## Integration Testing
-
-To run tests against a live API:
-
-```bash
-SYNKVAULT_TEST_BASE_URL=http://localhost:3102 \
-SYNKVAULT_TEST_ORG_ID=your-org-uuid \
-SYNKVAULT_TEST_API_KEY=your-api-key \
-pnpm test
-```
+- **OpenAPI Spec**: [https://synkvault-web-dev-partners-yqmxkygnlq-nw.a.run.app/api/v1/docs/openapi.json](https://synkvault-web-dev-partners-yqmxkygnlq-nw.a.run.app/api/v1/docs/openapi.json)
+- **Package Repository**: [NPM @synkvault/sdk](https://www.npmjs.com/package/@synkvault/sdk)
 
 ---
 
 ## Support
 
-- **API Reference**: [OpenAPI Spec](https://synkvault-web-dev-partners-yqmxkygnlq-nw.a.run.app/api/v1/docs/openapi.json)
-- **Package**: [@synkvault/sdk on npm](https://www.npmjs.com/package/@synkvault/sdk)
-- **License**: MIT
+For issues, questions, or contributions, contact the SynkVault team.
+
+**License**: MIT
