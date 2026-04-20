@@ -143,21 +143,11 @@ public sealed class SynkVaultClient
         ApplyAuth(request, skipAuth: false);
         request.Content = formData;
 
-        var response = await _httpClient
+        using var response = await _httpClient
             .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
             .ConfigureAwait(false);
 
-        if (!response.IsSuccessStatusCode)
-        {
-            var raw = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-            JsonDocument? doc = null;
-            try { doc = JsonDocument.Parse(raw); } catch { }
-            var msg = ExtractErrorMessage(doc, response.ReasonPhrase);
-            var data = doc?.RootElement.ValueKind == JsonValueKind.Object
-                ? (object?)JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(raw)
-                : null;
-            throw new SynkVaultException((int)response.StatusCode, msg, data);
-        }
+        await ThrowIfErrorAsync(response, cancellationToken).ConfigureAwait(false);
 
         using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         using var reader = new StreamReader(stream);
@@ -250,6 +240,24 @@ public sealed class SynkVaultClient
             return default!;
 
         return JsonSerializer.Deserialize<T>(raw, JsonOptions)!;
+    }
+
+    private static async Task ThrowIfErrorAsync(
+
+        HttpResponseMessage response,
+        CancellationToken cancellationToken)
+    {
+        if (response.IsSuccessStatusCode) return;
+
+        var raw = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+        JsonDocument? doc = null;
+        if (!string.IsNullOrEmpty(raw))
+            try { doc = JsonDocument.Parse(raw); } catch { }
+        var msg = ExtractErrorMessage(doc, response.ReasonPhrase);
+        var data = doc?.RootElement.ValueKind == JsonValueKind.Object
+            ? (object?)JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(raw)
+            : null;
+        throw new SynkVaultException((int)response.StatusCode, msg, data);
     }
 
     private static string ExtractErrorMessage(JsonDocument? doc, string? fallback)
