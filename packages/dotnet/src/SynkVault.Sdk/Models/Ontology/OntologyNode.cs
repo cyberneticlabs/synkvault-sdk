@@ -27,8 +27,8 @@ public sealed record OntologyNode
     public Dictionary<string, JsonElement>? UniqueProperties { get; init; }
 
     [JsonPropertyName("allowDirectQuery")]
-    public required bool AllowDirectQuery { get; init; }
+    public bool AllowDirectQuery { get; init; }
 
     [JsonPropertyName("includeInMapPlotting")]
-    public required bool IncludeInMapPlotting { get; init; }
+    public bool IncludeInMapPlotting { get; init; }
 }

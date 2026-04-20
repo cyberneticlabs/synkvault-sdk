@@ -83,6 +83,58 @@ public sealed class OntologyResourceTests
         Assert.Equal(1, result.Count);
     }
 
+    // Regression: allowDirectQuery and includeInMapPlotting are optional in the API schema.
+    // If absent from the response, deserialization must not throw.
+
+    [Fact]
+    public async Task ListAsync_NodeMissingOptionalBoolFields_DoesNotThrow()
+    {
+        var (client, handler) = TestHelper.MakeClient();
+        handler.EnqueueResponse(200, new
+        {
+            data = new[] { new { id = "node-1", name = "Person", label = "Person", parentId = (string?)null } },
+            count = 1,
+        });
+
+        var result = await client.Ontology.ListAsync();
+
+        Assert.Single(result.Data);
+        Assert.False(result.Data[0].AllowDirectQuery);
+        Assert.False(result.Data[0].IncludeInMapPlotting);
+    }
+
+    [Fact]
+    public async Task GetAsync_NodeMissingOptionalBoolFields_DoesNotThrow()
+    {
+        var (client, handler) = TestHelper.MakeClient();
+        handler.EnqueueResponse(200, new
+        {
+            data = new { id = "node-1", name = "Person", label = "Person", parentId = (string?)null },
+        });
+
+        var result = await client.Ontology.GetAsync("node-1");
+
+        Assert.False(result.Data.AllowDirectQuery);
+        Assert.False(result.Data.IncludeInMapPlotting);
+    }
+
+    [Fact]
+    public async Task GetChildrenAsync_NodeMissingOptionalBoolFields_DoesNotThrow()
+    {
+        var (client, handler) = TestHelper.MakeClient();
+        handler.EnqueueResponse(200, new
+        {
+            data = new[] { new { id = "node-1", name = "Person", label = "Person", parentId = (string?)null } },
+            count = 1,
+        });
+
+        var result = await client.Ontology.GetChildrenAsync("node-1");
+
+        Assert.Single(result.Data);
+        Assert.False(result.Data[0].AllowDirectQuery);
+        Assert.False(result.Data[0].IncludeInMapPlotting);
+    }
+
     [Fact]
     public async Task UpdateDescriptionAsync_ReturnsUpdatedNode()
     {
