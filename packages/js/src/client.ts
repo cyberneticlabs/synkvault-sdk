@@ -1,11 +1,12 @@
 import { SynkVaultError } from './errors.js'
+import { ChatResource } from './resources/chat.js'
 import { DocumentsResource } from './resources/documents.js'
 import { HealthResource } from './resources/health.js'
 import { IngestResource } from './resources/ingest.js'
 import { KnowledgeResource } from './resources/knowledge.js'
 import { OntologyResource } from './resources/ontology.js'
 import { OrgsResource } from './resources/orgs.js'
-import type { SynkVaultConfig } from './types.js'
+import type { ChatEvent, SynkVaultConfig } from './types.js'
 
 interface RequestOptions {
   params?: Record<string, unknown>
@@ -21,6 +22,7 @@ export class SynkVaultClient {
   readonly knowledge: KnowledgeResource
   readonly ingest: IngestResource
   readonly documents: DocumentsResource
+  readonly chat: ChatResource
 
   private readonly config: SynkVaultConfig
 
@@ -38,6 +40,7 @@ export class SynkVaultClient {
     this.knowledge = new KnowledgeResource(this)
     this.ingest = new IngestResource(this)
     this.documents = new DocumentsResource(this)
+    this.chat = new ChatResource(this)
   }
 
   getOrgId(): string {
@@ -94,20 +97,10 @@ export class SynkVaultClient {
     }
 
     const raw = await response.text()
-    let data: unknown
-    try {
-      data = raw ? JSON.parse(raw) : null
-    } catch {
-      data = { message: raw }
-    }
+    const data = this.parseResponseBody(raw)
 
     if (!response.ok) {
-      const msg =
-        (data as Record<string, string> | null)?.statusMessage ??
-        (data as Record<string, string> | null)?.message ??
-        (data as Record<string, string> | null)?.error ??
-        response.statusText
-      throw new SynkVaultError(response.status, msg, data)
+      throw new SynkVaultError(response.status, this.extractErrorMessage(data, response.statusText), data)
     }
 
     return data as T
@@ -150,22 +143,98 @@ export class SynkVaultClient {
     }
 
     const raw = await response.text()
-    let data: unknown
-    try {
-      data = raw ? JSON.parse(raw) : null
-    } catch {
-      data = { message: raw }
-    }
+    const data = this.parseResponseBody(raw)
 
     if (!response.ok) {
-      const msg =
-        (data as Record<string, string> | null)?.statusMessage ??
-        (data as Record<string, string> | null)?.message ??
-        (data as Record<string, string> | null)?.error ??
-        response.statusText
-      throw new SynkVaultError(response.status, msg, data)
+      throw new SynkVaultError(response.status, this.extractErrorMessage(data, response.statusText), data)
     }
 
     return data as T
+  }
+
+  private parseResponseBody(raw: string): unknown {
+    try {
+      return raw ? JSON.parse(raw) : null
+    } catch {
+      return { message: raw }
+    }
+  }
+
+  private extractErrorMessage(data: unknown, fallback: string): string {
+    return (
+      (data as Record<string, string> | null)?.statusMessage ??
+      (data as Record<string, string> | null)?.message ??
+      (data as Record<string, string> | null)?.error ??
+      fallback
+    )
+  }
+
+  async streamRequest(
+    path: string,
+    formData: FormData,
+  ): Promise<ReadableStream<ChatEvent>> {
+    const url = new URL(path, this.config.baseUrl)
+    url.searchParams.set('org_id', this.config.orgId)
+
+    const headers: Record<string, string> = this.config.token
+      ? { Authorization: `Bearer ${this.config.token}` }
+      : { 'X-Api-Key': this.config.apiKey! }
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      this.config.timeout ?? 30_000,
+    )
+
+    let response: Response
+    try {
+      response = await fetch(url.toString(), {
+        method: 'POST',
+        headers,
+        body: formData,
+        signal: controller.signal,
+      })
+    } finally {
+      clearTimeout(timeoutId)
+    }
+
+    if (!response.ok) {
+      const raw = await response.text()
+      const data = this.parseResponseBody(raw)
+      throw new SynkVaultError(response.status, this.extractErrorMessage(data, response.statusText), data)
+    }
+
+    if (!response.body) {
+      throw new SynkVaultError(0, 'Response body is null — streaming not supported in this environment', null)
+    }
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+
+    return new ReadableStream<ChatEvent>({
+      async pull(controller) {
+        const { done, value } = await reader.read()
+        if (done) {
+          controller.close()
+          return
+        }
+        buffer += decoder.decode(value, { stream: true })
+        const lines = buffer.split('\n')
+        buffer = lines.pop() ?? ''
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              controller.enqueue(JSON.parse(line.slice(6)) as ChatEvent)
+            } catch {
+              // malformed SSE line — skip
+            }
+          }
+        }
+      },
+      cancel() {
+        reader.cancel()
+      },
+    })
   }
 }

@@ -1,40 +1,9 @@
 {
-  "name": "@synkvault/sdk",
-  "version": "0.1.0-alpha.6",
-  "description": "Official TypeScript SDK for the SynkVault Partners API",
-  "license": "MIT",
-  "type": "module",
-  "engines": {
-    "node": ">=18"
-  },
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
-  },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "files": [
-    "dist",
-    "README.md"
-  ],
+  "name": "synkvault-sdk",
+  "private": true,
   "scripts": {
-    "build": "tsup",
-    "build:watch": "tsup --watch",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "prepublishOnly": "pnpm build && pnpm typecheck"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "devDependencies": {
-    "tsup": "^8.3.0",
-    "typescript": "^5.7.0",
-    "vitest": "^3.2.4"
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck"
   }
 }

@@ -1,6 +1,8 @@
 export { SynkVaultClient } from './client.js'
 export { SynkVaultError } from './errors.js'
 export type {
+  ChatEvent,
+  ChatRunParams,
   Document,
   DocumentResponse,
   DocumentsResponse,

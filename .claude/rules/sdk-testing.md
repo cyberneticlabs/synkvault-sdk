@@ -1,8 +1,8 @@
 ---
-description: SDK unit test guidelines — applies only to tests inside packages/js/sdk
+description: SDK unit test guidelines — applies only to tests inside packages/js/src
 paths:
-  - "packages/js/sdk/**/*.test.ts"
-  - "packages/js/sdk/**/*.spec.ts"
+  - "packages/js/src/**/*.test.ts"
+  - "packages/js/src/**/*.spec.ts"
 ---
 
 # SDK Unit Test Guidelines

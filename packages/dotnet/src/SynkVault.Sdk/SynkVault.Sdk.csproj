@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>SynkVault.Sdk</RootNamespace>
+    <AssemblyName>SynkVault.Sdk</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>1591</NoWarn>
+
+    <!-- NuGet metadata -->
+    <PackageId>SynkVault.Sdk</PackageId>
+    <Version>0.1.0-alpha.1</Version>
+    <Authors>CyberneticLabs</Authors>
+    <Description>Official .NET SDK for the SynkVault Partners API</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>synkvault;sdk;api;knowledge-graph</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>

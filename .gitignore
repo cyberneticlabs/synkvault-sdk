@@ -1,8 +1,18 @@
-# Dependencies
-node_modules
+# Node
+node_modules/
+.pnpm-store/
+dist/
 
-# Build
-dist
+# .NET
+packages/dotnet/**/.vs/
+packages/dotnet/**/bin/
+packages/dotnet/**/obj/
+packages/dotnet/**/*.user
+packages/dotnet/**/*.nupkg
+packages/dotnet/**/*.snupkg
+
+# Build outputs
+packages/js/dist/
 .nuxt
 .output
 
@@ -12,7 +22,6 @@ dist
 .env.*.local
 
 # IDE
-.vscode
 .idea
 *.swp
 *.swo
@@ -27,3 +36,5 @@ coverage
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+.claude/CLAUDE.local.md
