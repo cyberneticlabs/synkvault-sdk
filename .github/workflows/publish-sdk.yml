@@ -25,7 +25,7 @@ jobs:
       - name: Get base version
         id: base
         run: |
-          BASE_VERSION=$(jq -r '.version' packages/js/package.json)
+          BASE_VERSION=$([ -f packages/js/package.json ] && jq -r '.version' packages/js/package.json || echo "0.0.0")
           echo "version=${BASE_VERSION}" >> $GITHUB_OUTPUT
           echo "Base version: ${BASE_VERSION}"
 
