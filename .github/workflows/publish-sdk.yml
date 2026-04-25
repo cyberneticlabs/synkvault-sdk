@@ -1,64 +1,58 @@
 name: Publish SDK to npm
 
 on:
-  pull_request:
-    branches:
-      - master
-      - dev
-  push:
-    branches:
-      - master
+  release:
+    types:
+      - created
+
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
-  check-version:
-    name: Check SDK version bump
-    if: github.event_name == 'pull_request'
+  validate-release:
+    name: Validate release metadata
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.release-version.outputs.value }}
     steps:
-      - name: Checkout base branch
+      - name: Checkout release tag
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.base_ref }}
+          ref: ${{ github.event.release.tag_name }}
 
-      - name: Get base version
-        id: base
+      - name: Derive version from release tag
+        id: release-version
         run: |
-          BASE_VERSION=$([ -f packages/js/package.json ] && jq -r '.version' packages/js/package.json || echo "0.0.0")
-          echo "version=${BASE_VERSION}" >> $GITHUB_OUTPUT
-          echo "Base version: ${BASE_VERSION}"
+          TAG_NAME="${{ github.event.release.tag_name }}"
+          VERSION="${TAG_NAME#v}"
 
-      - name: Checkout PR branch
-        uses: actions/checkout@v5
-        with:
-          ref: ${{ github.head_ref }}
-
-      - name: Get PR version
-        id: pr
-        run: |
-          PR_VERSION=$(jq -r '.version' packages/js/package.json)
-          echo "version=${PR_VERSION}" >> $GITHUB_OUTPUT
-          echo "PR version: ${PR_VERSION}"
-
-      - name: Fail if version not bumped
-        run: |
-          BASE="${{ steps.base.outputs.version }}"
-          PR="${{ steps.pr.outputs.version }}"
-          if [ "$BASE" = "$PR" ] && [ "$BASE" != "0.0.0" ]; then
-            echo "::error::SDK version must be bumped in this PR. Current version: $BASE"
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Release tag '${TAG_NAME}' must be a semver tag such as v1.2.3 or 1.2.3"
             exit 1
           fi
-          echo "✓ Version: $BASE → $PR"
+
+          echo "value=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Release version: ${VERSION}"
+
+      - name: Verify version has not already been published
+        run: |
+          VERSION="${{ steps.release-version.outputs.value }}"
+          if npm view "@synkvault/sdk@${VERSION}" version >/dev/null 2>&1; then
+            echo "::error::Version ${VERSION} is already published on npm"
+            exit 1
+          fi
+          echo "✓ npm version ${VERSION} is available"
 
   test-js:
     name: Run JavaScript SDK unit tests
-    if: github.event_name == 'pull_request'
-    needs: check-version
+    needs: validate-release
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout PR branch
+      - name: Checkout release tag
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.event.release.tag_name }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -79,14 +73,13 @@ jobs:
 
   test-dotnet:
     name: Run .NET SDK unit tests
-    if: github.event_name == 'pull_request'
-    needs: check-version
+    needs: validate-release
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout PR branch
+      - name: Checkout release tag
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.event.release.tag_name }}
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v5
@@ -96,56 +89,67 @@ jobs:
       - name: Run tests
         run: dotnet test packages/dotnet/SynkVault.sln
 
-  test-js-publish:
-    name: Test JavaScript SDK before publish
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+  sync-version:
+    name: Sync SDK version back to master
+    needs: [validate-release, test-js, test-dotnet]
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
+      - name: Checkout master
         uses: actions/checkout@v5
+        with:
+          ref: master
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
           node-version: '22'
 
-      - name: Enable corepack
-        run: corepack enable
+      - name: Patch package version from release tag
+        id: patch-version
+        run: |
+          TARGET_VERSION="${{ needs.validate-release.outputs.version }}"
+          cd packages/js
+          npm version "${TARGET_VERSION}" --no-git-tag-version
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+          cd ../..
+          if git diff --quiet -- packages/js/package.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Package version already matches ${TARGET_VERSION}"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Package version updated to ${TARGET_VERSION}"
+          fi
 
-      - name: Run tests
-        run: pnpm test
-
-      - name: Type check
-        run: pnpm typecheck
-
-  test-dotnet-publish:
-    name: Test .NET SDK before publish
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v5
+      - name: Create version sync PR
+        id: create-pr
+        if: steps.patch-version.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v7
         with:
-          dotnet-version: '8.0.x'
+          token: ${{ secrets.REPO_ADMIN_TOKEN }}
+          branch: chore/sdk-release-${{ needs.validate-release.outputs.version }}
+          base: master
+          commit-message: "chore: sync sdk version to ${{ needs.validate-release.outputs.version }}"
+          title: "chore: sync sdk version to ${{ needs.validate-release.outputs.version }}"
+          body: |
+            Syncs `packages/js/package.json` with GitHub release `${{ github.event.release.tag_name }}`.
+          delete-branch: true
 
-      - name: Run tests
-        run: dotnet test packages/dotnet/SynkVault.sln
+      - name: Merge version sync PR
+        if: steps.create-pr.outputs.pull-request-number != ''
+        env:
+          GH_TOKEN: ${{ secrets.REPO_ADMIN_TOKEN }}
+        run: gh pr merge "${{ steps.create-pr.outputs.pull-request-number }}" --squash --delete-branch
 
   publish:
     name: Publish @synkvault/sdk to npm
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    needs: [test-js-publish, test-dotnet-publish]
+    needs: [validate-release, sync-version]
     runs-on: ubuntu-latest
     environment: sdk
     steps:
-      - name: Checkout code
+      - name: Checkout release tag
         uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.release.tag_name }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -158,6 +162,11 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Patch package version from release tag
+        run: |
+          cd packages/js
+          npm version "${{ needs.validate-release.outputs.version }}" --no-git-tag-version
 
       - name: Configure npm auth
         run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
