@@ -110,7 +110,7 @@ jobs:
         run: |
           TARGET_VERSION="${{ needs.validate-release.outputs.version }}"
           cd packages/js
-          npm version "${TARGET_VERSION}" --no-git-tag-version
+          npm version "${TARGET_VERSION}" --no-git-tag-version --allow-same-version
 
           cd ../..
           if git diff --quiet -- packages/js/package.json; then
@@ -167,7 +167,7 @@ jobs:
       - name: Patch package version from release tag
         run: |
           cd packages/js
-          npm version "${{ needs.validate-release.outputs.version }}" --no-git-tag-version
+          npm version "${{ needs.validate-release.outputs.version }}" --no-git-tag-version --allow-same-version
 
       - name: Configure npm auth
         run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > .npmrc
