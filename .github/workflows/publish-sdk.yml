@@ -93,6 +93,7 @@ jobs:
     name: Sync SDK version back to master
     needs: [validate-release, test-js, test-dotnet]
     runs-on: ubuntu-latest
+    environment: sdk
     steps:
       - name: Checkout master
         uses: actions/checkout@v5
