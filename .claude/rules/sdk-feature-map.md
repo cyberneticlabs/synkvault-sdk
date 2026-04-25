@@ -151,6 +151,17 @@ Maps every feature to its implementation across all SDK packages. When adding a 
 | Endpoint | `POST /api/v1/chat` (multipart/form-data) | Same |
 | org_id | Always appended | Same |
 | Auth | API key or Bearer token | Same |
+
+### Media
+
+| Method | TypeScript | .NET |
+|---|---|---|
+| Fetch file | `client.media.getFile(path)` | `client.Media.GetFileAsync(path, ct?)` |
+| Endpoint | `GET /api/media/{path}` | Same |
+| Path format | `{org_id}/{document_id}/images/{filename}` | Same |
+| skipOrgId | `true` (org_id is embedded in path) | `true` |
+| skipAuth | `true` (server authenticates internally) | `true` |
+| Returns | `Blob` | `Stream` (`MemoryStream`) |
 | Request fields | `message` (required), `stream?`, `session_id?`, `user_id?` | Same |
 | Returns | `ReadableStream<ChatEvent>` (SSE) | `IAsyncEnumerable<ChatEvent>` |
 | Error on non-2xx | Throws `SynkVaultError` before stream opens | Same |
@@ -225,7 +236,7 @@ When porting to a new language, ensure:
 1. **Client constructor** — validates `baseUrl`, `orgId`, and at least one auth credential; throws on missing required fields
 2. **`request<T>`** — injects `org_id` query param, applies auth header, respects `skipOrgId`/`skipAuth`, handles timeout, throws the SDK error type on non-2xx
 3. **`uploadFile<T>`** — multipart POST; always injects `org_id`; same auth/timeout logic
-4. **All 6 resources** — `Health`, `Orgs`, `Ontology`, `Knowledge`, `Ingest`, `Documents` — all endpoints listed above
+4. **All 7 resources** — `Health`, `Orgs`, `Ontology`, `Knowledge`, `Ingest`, `Documents`, `Media` — all endpoints listed above
 5. **Error type** — wraps HTTP status, message, and raw response
 6. **All model types** — match the JSON field names exactly via serialization attributes or config
 7. **Tests** — mirror the TypeScript test coverage: client transport tests + one test file per resource + scenarios + integration skip

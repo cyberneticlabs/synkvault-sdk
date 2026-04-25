@@ -46,6 +46,9 @@ public sealed class SynkVaultClient
     /// <summary>Chat / AI agent interaction via SSE streaming.</summary>
     public ChatResource Chat { get; }
 
+    /// <summary>Media proxy for accessing stored files (images, video, etc.).</summary>
+    public MediaResource Media { get; }
+
     // ── Constructors ────────────────────────────────────────────────────────
 
     /// <summary>
@@ -78,6 +81,7 @@ public sealed class SynkVaultClient
         Ingest = new IngestResource(this);
         Documents = new DocumentsResource(this);
         Chat = new ChatResource(this);
+        Media = new MediaResource(this);
     }
 
     // ── Internal helpers ────────────────────────────────────────────────────
@@ -164,6 +168,29 @@ public sealed class SynkVaultClient
             catch { continue; }
             if (evt is not null) yield return evt;
         }
+    }
+
+    /// <summary>
+    /// Fetches a binary resource and returns its contents as a <see cref="MemoryStream"/>.
+    /// No org_id query param is appended and no auth header is applied.
+    /// Throws <see cref="SynkVaultException"/> on non-2xx responses.
+    /// </summary>
+    internal async Task<Stream> FetchBinaryAsync(
+        string path,
+        CancellationToken cancellationToken = default)
+    {
+        var url = BuildUrl(path, extraParams: null, skipOrgId: true);
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+
+        using var response = await SendWithTimeoutAsync(request, cancellationToken).ConfigureAwait(false);
+        await ThrowIfErrorAsync(response, cancellationToken).ConfigureAwait(false);
+
+        var bytes = await response.Content
+            .ReadAsByteArrayAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return new MemoryStream(bytes);
     }
 
     // ── Private helpers ─────────────────────────────────────────────────────

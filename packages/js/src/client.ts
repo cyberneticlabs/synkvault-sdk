@@ -4,6 +4,7 @@ import { DocumentsResource } from './resources/documents.js'
 import { HealthResource } from './resources/health.js'
 import { IngestResource } from './resources/ingest.js'
 import { KnowledgeResource } from './resources/knowledge.js'
+import { MediaResource } from './resources/media.js'
 import { OntologyResource } from './resources/ontology.js'
 import { OrgsResource } from './resources/orgs.js'
 import type { ChatEvent, SynkVaultConfig } from './types.js'
@@ -23,6 +24,7 @@ export class SynkVaultClient {
   readonly ingest: IngestResource
   readonly documents: DocumentsResource
   readonly chat: ChatResource
+  readonly media: MediaResource
 
   private readonly config: SynkVaultConfig
 
@@ -41,6 +43,7 @@ export class SynkVaultClient {
     this.ingest = new IngestResource(this)
     this.documents = new DocumentsResource(this)
     this.chat = new ChatResource(this)
+    this.media = new MediaResource(this)
   }
 
   getOrgId(): string {
@@ -150,6 +153,34 @@ export class SynkVaultClient {
     }
 
     return data as T
+  }
+
+  async fetchBinary(path: string): Promise<Blob> {
+    const url = new URL(path, this.config.baseUrl)
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      this.config.timeout ?? 30_000,
+    )
+
+    let response: Response
+    try {
+      response = await fetch(url.toString(), {
+        method: 'GET',
+        signal: controller.signal,
+      })
+    } finally {
+      clearTimeout(timeoutId)
+    }
+
+    if (!response.ok) {
+      const raw = await response.text()
+      const data = this.parseResponseBody(raw)
+      throw new SynkVaultError(response.status, this.extractErrorMessage(data, response.statusText), data)
+    }
+
+    return response.blob()
   }
 
   private parseResponseBody(raw: string): unknown {
